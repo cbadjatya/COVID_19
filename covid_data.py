@@ -27,7 +27,7 @@ def get_data():
             df = pd.read_excel(url)
     df = df.rename(columns = {'Countries and territories':'Area'})
     df['Area'] = df['Area'].apply(lambda x : x.upper())
-    return df
+    return [df,date]
 
 def get_monthly_data(df):
     temp = df.copy()
@@ -57,5 +57,22 @@ def get_total_data(df):
             'Id':df.loc[df['Area']==each]['GeoId'].unique()[0]
         }
         total = total.append(row,ignore_index=True)
-    total = total.loc[(total['Cases'] != 0) | (total['Deaths'] != 0)]
+    total = total.sort_values(by='Cases', ascending=False)
     return total
+
+def cumulative(data):
+
+    dates = data['DateRep'].unique()
+    cumulative = pd.DataFrame(columns=['DateRep','Cases','Deaths'])
+    for each in dates:
+        row = {
+            'DateRep':each,
+            'Cases':data.loc[data['DateRep']==each]['Cases'].sum(),
+            'Deaths':data.loc[data['DateRep']==each]['Deaths'].sum(),
+        }
+        cumulative = cumulative.append(row,ignore_index=True)
+    cumulative = cumulative.sort_values(by="DateRep")
+    cumulative['Deaths'] = cumulative['Deaths'].cumsum()
+    cumulative['Cases'] = cumulative['Cases'].cumsum()
+
+    return cumulative

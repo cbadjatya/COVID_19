@@ -4,18 +4,26 @@ import pandas as pd
 
 import plotly.express as px
 import plotly.graph_objects as go
+
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_table
+
 from dash.dependencies import Input, Output
 
 external_stylesheets = ['https://github.com/plotly/dash-app-stylesheets/blob/master/dash-technical-charting.css']
+tabs_styles = {
+    'height': '44px'
+}
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
-df = covid_data.get_data()
+df,date = covid_data.get_data()
 
 covid_data.updateId(df)
+
+totals = covid_data.get_total_data(df)
 
 def get_daily_plot(df,area='CHINA'):
     if(area=='ALL'):
@@ -37,13 +45,9 @@ def get_daily_plot(df,area='CHINA'):
                          legend=dict(
                                     x=0,
                                     y=1.0,
-
-
-
                                     bgcolor='rgba(255, 255, 255, 0)',
                                     bordercolor='rgba(255, 255, 255, 0)'
                                 ),)
-
     else:
         daily = df.copy()
         fig = go.Figure(
@@ -52,7 +56,7 @@ def get_daily_plot(df,area='CHINA'):
             go.Bar(name='Cases', x=daily['DateRep'], y=daily.loc[daily['Area']==area]['Cases'])
             ]
         )
-        fig.update_layout(title = area,barmode='group',plot_bgcolor='lightgrey',
+        fig.update_layout(barmode='group',plot_bgcolor='lightgrey',
                          legend=dict(
                                     x=0,
                                     y=1.0,
@@ -62,20 +66,19 @@ def get_daily_plot(df,area='CHINA'):
     return fig
 
 def countrywise_graph(df):
-    total = covid_data.get_total_data(df)
     fig = go.Figure(
     data=[
-        go.Bar(name='Deaths', x=total['Area'], y=total['Deaths']),
-        go.Bar(name='Cases', x=total['Area'], y=total['Cases'])
+        go.Bar(name='Deaths', x=totals.head(20)['Area'], y=totals.head(20)['Deaths']),
+        go.Bar(name='Cases', x=totals.head(20)['Area'], y=totals.head(20)['Cases'])
         ]
     )
     fig.update_layout(
-        title='Areawise status',
+        title='Area-wise status (20 most affected countries)',
         xaxis_tickfont_size=1,
         xaxis=dict(
             title = "Area",
             titlefont_size=16,
-            tickfont_size=7,
+            tickfont_size=12,
         ),
         legend=dict(
             x=0,
@@ -93,7 +96,6 @@ def countrywise_graph(df):
 def global_map(df,kind):
 
     # df = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/2014_world_gdp_with_codes.csv')
-    df = covid_data.get_total_data(df)
     fig = go.Figure(data=go.Choropleth(
         locations = df['Id'],
         z = df[kind],
@@ -108,7 +110,7 @@ def global_map(df,kind):
 
     fig.update_layout(
         title_text='COVID_19 World Map',
-        height=1000,
+        height=900,
         geo=dict(
             showframe=False,
             showcoastlines=False,
@@ -118,52 +120,124 @@ def global_map(df,kind):
 
     return fig
 
+def cum_plot(data):
+    cum = covid_data.cumulative(data)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x = cum['DateRep'],
+        y = cum['Deaths'],
+        name = "Deaths",
+        mode = "lines+markers"
+        )
+    )
+    fig.add_trace(go.Scatter(
+        x = cum['DateRep'],
+        y = cum['Cases'],
+        name = "Cases",
+        mode = "lines+markers"
+        )
+    )
+    fig.update_layout(
+        title='Total Cases (Date-wise)',
+        xaxis_tickfont_size=1,
+        xaxis=dict(
+            title = "Date",
+            titlefont_size=16,
+            tickfont_size=14,
+        ),
+        legend=dict(
+            x=0,
+            y=1.0,
+            bgcolor='rgba(255, 255, 255, 0)',
+        ),
+        plot_bgcolor='lightgrey'
+    )
+    return fig
 
 Areas = [
     {'label':i, 'value':i} for i in df['Area'].unique()
 ]
 Areas.append({'label':'All', 'value':'ALL'})
 
-
 app.layout = html.Div(children=[
-    dcc.Tabs(
-        children=[
-            dcc.Tab(label = 'GeoMap',children=[
-                html.Div( id = 'makeMap',
-                    children=[
-                        html.Div(
-                            html.H1("Global map with latest data")
+        html.Div(
+            dcc.Tabs(
+                children=[
+                    dcc.Tab(label = 'Global Map',children=[
+                        html.Div( id = 'makeMap',
+                            children=[
+                                html.Div(
+                                    html.H3("Global Data as of {}".format(date))
+                                ),
+                                dcc.Dropdown(
+                                    id = 'ChooseMap',
+                                    options = [
+                                        {'label':'Deaths','value':'Deaths'},
+                                        {'label':'Cases','value':'Cases'}
+                                    ],
+                                    value='Cases',
+                                ),
+                                dcc.Graph(
+                                    id='GlobalMap',
+                                )
+                            ]
+                        )
+                    ]),
+                    dcc.Tab(label = 'Charts',children=[
+                        html.Div(children=[
+                            dcc.Dropdown(id = 'Country',
+                                options = Areas,
+                                value = 'CHINA',
+                            ),
+                            dcc.Graph(
+                                id = 'DateWise',
+                            ),
+                        ],
+                            style={'width': '49%', 'display': 'inline-block'}
                         ),
-                        dcc.Dropdown(
-                            id = 'ChooseMap',
-                            options = [
-                                {'label':'Deaths','value':'Deaths'},
-                                {'label':'Cases','value':'Cases'}
+                        html.Div(
+                            children=[
+                                dcc.Graph(
+                                    id = "cumulative",
+                                    figure = cum_plot(df)
+                                ),
                             ],
-                            value='Cases',
+                            style={'width': '49%', 'display': 'inline-block'}
                         ),
                         dcc.Graph(
-                            id='GlobalMap',
+                            id = 'CountryWise',
+                            figure = countrywise_graph(totals)
                         )
-                    ]
-                )
-            ]),
-            dcc.Tab(label = 'charts',children=[
-                dcc.Dropdown(id = 'Country',
-                    options = Areas,
-                    value = 'CHINA',
-                ),
-                dcc.Graph(
-                    id = 'DateWise',
-                ),
-                dcc.Graph(
-                    id = 'CountryWise',
-                    figure = countrywise_graph(df)
-                )
-            ])
-        ]
-    ),
-])
+                    ]),
+                    dcc.Tab(label='Table',children=[
+                        dash_table.DataTable(
+                            id = 'table',
+                            columns = [{'name':i, 'id':i} for i in totals.columns],
+                            data = totals.to_dict('records'),
+                            style_cell={'textAlign': 'left'},
+                            style_header={
+                                'backgroundColor': 'white',
+                                'fontWeight': 'bold'
+                            },
+                            style_cell_conditional=[
+                                {
+                                    'if': {'column_id': 'Region'},
+                                    'textAlign': 'left'
+                                },
+                            ],
+                            # style_as_list_view=True,
+                            style_table={
+                                    'maxHeight': '900px',
+                                    'overflowY': 'scroll'
+                                },
+                        )
+                    ])
+                ],
+                style = tabs_styles
+            ),
+        ),
+],
+)
 
 
 @app.callback(
@@ -171,7 +245,7 @@ app.layout = html.Div(children=[
     [Input('ChooseMap','value')]
 )
 def make_map(value):
-    return global_map(df,value)
+    return global_map(totals,value)
 
 
 @app.callback(
