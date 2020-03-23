@@ -25,7 +25,7 @@ covid_data.updateId(df)
 
 totals = covid_data.get_total_data(df)
 
-def get_daily_plot(df,area='CHINA'):
+def get_daily_plot(df,area='ALL'):
     if(area=='ALL'):
         daily = pd.DataFrame(columns=['Date','Deaths','Cases'])
         for date in df['DateRep'].unique():
@@ -187,7 +187,7 @@ app.layout = html.Div(children=[
                         html.Div(children=[
                             dcc.Dropdown(id = 'Country',
                                 options = Areas,
-                                value = 'CHINA',
+                                value = 'ALL',
                             ),
                             dcc.Graph(
                                 id = 'DateWise',
