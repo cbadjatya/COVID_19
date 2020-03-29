@@ -25,7 +25,7 @@ def get_data():
         request = requests.get(url)
         if request.status_code == 200:
             df = pd.read_excel(url)
-    df = df.rename(columns = {'Countries and territories':'Area'})
+    df = df.rename(columns = {'countriesandTerritories':'Area'})
     df['Area'] = df['Area'].apply(lambda x : x.upper())
     return [df,date]
 
