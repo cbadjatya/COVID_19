@@ -3,15 +3,6 @@ import pandas as pd
 import requests
 import pycountry as pc
 
-def updateId(df):
-    def updateId(Id):
-        try:
-            Id = pc.countries.get(alpha_2=Id).alpha_3
-        except:
-            pass
-        return Id
-    df['GeoId'] = df['GeoId'].apply(updateId)
-
 def get_data():
     df = pd.DataFrame()
     date = datetime.date.today()
@@ -26,22 +17,23 @@ def get_data():
         if request.status_code == 200:
             df = pd.read_excel(url)
     df = df.rename(columns = {'countriesandTerritories':'Area'})
+    df = df.rename(columns = {'countryterritoryCode':'Id'})
     df['Area'] = df['Area'].apply(lambda x : x.upper())
     return [df,date]
 
 def get_monthly_data(df):
     temp = df.copy()
-    temp['Month'] = temp['Month'].apply(lambda x : str(x)) + "-" + temp['Year'].apply(lambda x : str(x))
-    months = temp['Month'].unique().tolist()
+    temp['month'] = temp['month'].apply(lambda x : str(x)) + "-" + temp['year'].apply(lambda x : str(x))
+    months = temp['month'].unique().tolist()
     monthly = pd.DataFrame(columns=['Area','Month','Cases','Deaths','Id'])
     for each in months:
         for area in Areas:
             row = {
                 'Area': area,
                 'Month': each,
-                'Cases': temp.loc[(temp['Area']==area) & (temp['Month']==each)]['Cases'].sum(),
-                'Deaths':temp.loc[(temp['Area']==area) & (temp['Month']==each)]['Deaths'].sum(),
-                'Id': temp.loc[temp['Area']==area]['GeoId'].unique().tolist()[0]
+                'Cases': temp.loc[(temp['Area']==area) & (temp['month']==each)]['cases'].sum(),
+                'Deaths':temp.loc[(temp['Area']==area) & (temp['month']==each)]['deaths'].sum(),
+                'Id': temp.loc[temp['Area']==area]['Id'].unique().tolist()[0]
             }
             monthly = monthly.append(row,ignore_index=True)
     return monthly
@@ -52,9 +44,9 @@ def get_total_data(df):
     for each in Areas:
         row = {
             'Area':each,
-            'Cases': df.loc[df['Area']==each]['Cases'].sum(),
-            'Deaths': df.loc[df['Area']==each]['Deaths'].sum(),
-            'Id':df.loc[df['Area']==each]['GeoId'].unique()[0]
+            'Cases': df.loc[df['Area']==each]['cases'].sum(),
+            'Deaths': df.loc[df['Area']==each]['deaths'].sum(),
+            'Id':df.loc[df['Area']==each]['Id'].unique()[0]
         }
         total = total.append(row,ignore_index=True)
     total = total.sort_values(by='Cases', ascending=False)
@@ -62,13 +54,13 @@ def get_total_data(df):
 
 def cumulative(data):
 
-    dates = data['DateRep'].unique()
+    dates = data['dateRep'].unique()
     cumulative = pd.DataFrame(columns=['DateRep','Cases','Deaths'])
     for each in dates:
         row = {
             'DateRep':each,
-            'Cases':data.loc[data['DateRep']==each]['Cases'].sum(),
-            'Deaths':data.loc[data['DateRep']==each]['Deaths'].sum(),
+            'Cases':data.loc[data['dateRep']==each]['cases'].sum(),
+            'Deaths':data.loc[data['dateRep']==each]['deaths'].sum(),
         }
         cumulative = cumulative.append(row,ignore_index=True)
     cumulative = cumulative.sort_values(by="DateRep")
