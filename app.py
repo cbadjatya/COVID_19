@@ -21,20 +21,19 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 server = app.server
 
-df,date = covid_data.get_data()
-
-covid_data.updateId(df)
+df = covid_data.get_data()
+date = df.iloc[0].Date.date()
 
 totals = covid_data.get_total_data(df)
 
 def get_daily_plot(df,area='ALL'):
     if(area=='ALL'):
         daily = pd.DataFrame(columns=['Date','Deaths','Cases'])
-        for date in df['DateRep'].unique():
+        for date in df['Date'].unique():
             row = {
                 'Date':date,
-                'Deaths':df.loc[df['DateRep']==date]['Deaths'].sum(),
-                'Cases': df.loc[df['DateRep']==date]['Cases'].sum()
+                'Deaths':df.loc[df['Date']==date]['Deaths'].sum(),
+                'Cases': df.loc[df['Date']==date]['Cases'].sum()
             }
             daily = daily.append(row,ignore_index=True)
         fig = go.Figure(
@@ -54,8 +53,8 @@ def get_daily_plot(df,area='ALL'):
         daily = df.copy()
         fig = go.Figure(
         data=[
-            go.Bar(name='Deaths', x=daily['DateRep'], y=daily.loc[daily['Area']==area]['Deaths']),
-            go.Bar(name='Cases', x=daily['DateRep'], y=daily.loc[daily['Area']==area]['Cases'])
+            go.Bar(name='Deaths', x=daily['Date'], y=daily.loc[daily['Area']==area]['Deaths']),
+            go.Bar(name='Cases', x=daily['Date'], y=daily.loc[daily['Area']==area]['Cases'])
             ]
         )
         fig.update_layout(barmode='group',plot_bgcolor='lightgrey',
@@ -99,7 +98,7 @@ def global_map(df,kind):
 
     # df = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/2014_world_gdp_with_codes.csv')
     fig = go.Figure(data=go.Choropleth(
-        locations = df['Id'],
+        locations = df['alpha3'],
         z = df[kind],
         text = df['Area'],
         autocolorscale=False,
@@ -126,14 +125,14 @@ def cum_plot(data):
     cum = covid_data.cumulative(data)
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x = cum['DateRep'],
+        x = cum['Date'],
         y = cum['Deaths'],
         name = "Deaths",
         mode = "lines+markers"
         )
     )
     fig.add_trace(go.Scatter(
-        x = cum['DateRep'],
+        x = cum['Date'],
         y = cum['Cases'],
         name = "Cases",
         mode = "lines+markers"
