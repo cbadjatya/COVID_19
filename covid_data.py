@@ -32,6 +32,7 @@ def get_monthly_data(df):
     temp['month'] = temp['month'].apply(lambda x : str(x)) + "-" + temp['year'].apply(lambda x : str(x))
     months = temp['month'].unique().tolist()
     monthly = pd.DataFrame(columns=['Area','Month','Cases','Deaths','Id'])
+    Areas = df['Area'].unique()
     for each in months:
         for area in Areas:
             row = {

@@ -1,6 +1,7 @@
 import covid_data
 
 import pandas as pd
+import numpy as np
 
 import plotly.express as px
 import plotly.graph_objects as go
@@ -18,6 +19,7 @@ tabs_styles = {
 }
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app.title = 'COVID19'
 
 server = app.server
 
@@ -97,26 +99,20 @@ def countrywise_graph(df):
 def global_map(df,kind):
 
     # df = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/2014_world_gdp_with_codes.csv')
-    fig = go.Figure(data=go.Choropleth(
-        locations = df['alpha3'],
-        z = df[kind],
-        text = df['Area'],
-        autocolorscale=False,
-        reversescale=True,
-        marker_line_color='darkgray',
-        marker_line_width=0.5,
-        colorbar_title = kind,
-        colorscale = 'Greens',
-    ))
 
+    data = covid_data.get_total_data(df)
+
+    if(kind == 'Deaths'):
+        size_kind = np.tanh(abs(np.array(data['Deaths'].tolist())/800))*600
+    else:
+        size_kind = np.tanh(abs(np.array(data.Cases.tolist())/20000))*600
+
+    fig = px.scatter_geo(data, locations="alpha3", color="Area",
+                         hover_name="Area", size=size_kind, hover_data=[kind],
+                         projection="orthographic")
     fig.update_layout(
         title_text='COVID_19 World Map',
         height=900,
-        geo=dict(
-            showframe=False,
-            showcoastlines=False,
-            projection_type='equirectangular'
-        ),
     )
 
     return fig
@@ -260,4 +256,3 @@ def make_charts(value):
 
 if __name__ == '__main__':
     app.run_server(debug=True)
-    app.title = 'COVID19'
