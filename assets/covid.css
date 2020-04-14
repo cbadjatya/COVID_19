@@ -18,6 +18,15 @@
 
 /* Grid
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
+.header {
+  padding: inherit;
+  text-align: center;
+  background: slategrey;
+  color: black;
+  font-size: 50px;
+  font-family:  monospace;
+}
+
 .container {
   position: relative;
   width: 100%;
@@ -56,7 +65,7 @@
   .three.columns                  { width: 22%;            }
   .four.columns                   { width: 30.6666666667%; }
   .five.columns                   { width: 39.3333333333%; }
-  .six.columns                    { width: 31%;            }
+  .six.columns                    { width: 31.667%;            }
   .seven.columns                  { width: 56.6666666667%; }
   .eight.columns                  { width: 65.3333333333%; }
   .nine.columns                   { width: 74.0%;          }
@@ -118,7 +127,7 @@ body {
   font-family: "Open Sans", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: #263238;  /* Material blue-grey 900*/
   background-color: #cfd8dc;  /* Material blue-grey 100*/
-  margin: 5%;
+  margin: 3% 5% 5% 5%;
 }
 
 

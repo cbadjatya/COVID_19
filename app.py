@@ -19,13 +19,13 @@ app = dash.Dash(
         {"name": "viewport", "content": "width=device-width, initial-scale=1.0"}
     ],
 )
-server = app.server
-app.title = 'COVID19'
 
 server = app.server
+app.title = 'COVID19 Tracker'
 
-df = covid_data.get_data()
-df_total_new = covid_data.update_total()
+df_total = covid_data.df_total
+df_daily = covid_data.df_daily
+df_total_new = covid_data.df_total_country_wise()
 
 bgcolor = "#f3f3f1"
 
@@ -35,77 +35,84 @@ map_colors = {
     "Recovered" : [marker_colors['Recovered']]*df_total_new['Recovered'].size,
     "Confirmed" : [marker_colors["Confirmed"]]*df_total_new["Confirmed"].size,
 }
-# totals = covid_data.get_total_data(df)
-
-# def get_daily_plot(df,area='ALL'):
-#     if(area=='ALL'):
-#         daily = pd.DataFrame(columns=['Date','Deaths','Cases'])
-#         for date in df['Date'].unique():
-#             row = {
-#                 'Date':date,
-#                 'Deaths':df.loc[df['Date']==date]['Deaths'].sum(),
-#                 'Cases': df.loc[df['Date']==date]['Cases'].sum()
-#             }
-#             daily = daily.append(row,ignore_index=True)
-#         fig = go.Figure(
-#         data=[
-#             go.Bar(name='Deaths', x=daily['Date'], y=daily['Deaths']),
-#             go.Bar(name='Cases', x=daily['Date'], y=daily['Cases'])
-#             ]
-#         )
-#         fig.update_layout(title='Global Daily Data',barmode='group',plot_bgcolor='lightgrey',
-#                          legend=dict(
-#                                     x=0,
-#                                     y=1.0,
-#                                     bgcolor='rgba(255, 255, 255, 0)',
-#                                     bordercolor='rgba(255, 255, 255, 0)'
-#                                 ),)
-#     else:
-#         daily = df.copy()
-#         fig = go.Figure(
-#         data=[
-#             go.Bar(name='Deaths', x=daily['Date'], y=daily.loc[daily['Area']==area]['Deaths']),
-#             go.Bar(name='Cases', x=daily['Date'], y=daily.loc[daily['Area']==area]['Cases'])
-#             ]
-#         )
-#         fig.update_layout(barmode='group',plot_bgcolor='lightgrey',
-#                          legend=dict(
-#                                     x=0,
-#                                     y=1.0,
-#                                     bgcolor='rgba(255, 255, 255, 0)',
-#                                     bordercolor='rgba(255, 255, 255, 0)'
-#                                 ),)
-#     return fig
-
-# def countrywise_graph(df):
-#     fig = go.Figure(
-#     data=[
-#         go.Bar(name='Deaths', x=totals.head(20)['Area'], y=totals.head(20)['Deaths']),
-#         go.Bar(name='Cases', x=totals.head(20)['Area'], y=totals.head(20)['Cases'])
-#         ]
-#     )
-#     fig.update_layout(
-#         title='Area-wise status (20 most affected countries)',
-#         xaxis_tickfont_size=1,
-#         xaxis=dict(
-#             title = "Area",
-#             titlefont_size=16,
-#             tickfont_size=12,
-#         ),
-#         legend=dict(
-#             x=0,
-#             y=1.0,
-#             bgcolor='rgba(255, 255, 255, 0)',
-#             bordercolor='rgba(255, 255, 255, 0)'
-#         ),
-#         barmode='group',
-#         bargap=0.15, # gap between bars of adjacent location coordinates.
-#         bargroupgap=0.1, # gap between bars of the same location coordinate.
-#         plot_bgcolor='lightgrey'
-#     )
-#     return fig
 
 template = {'layout': {'paper_bgcolor': bgcolor, 'plot_bgcolor': bgcolor}}
+
+
+def daily_plot_country_wise():
+    """
+    Plot total cases and deaths till date in top-30 countries
+    """
+    data = covid_data.get_daily_countrywise_cumulative_data()
+
+    visible_list_cases = [True]*30
+    visible_list_cases.extend([False]*30)
+    visible_list_deaths = [False]*30
+    visible_list_deaths.extend([True]*30)
+
+    fig = go.Figure()
+
+    data = data.sort_values(by='cases',ascending=False)
+    top30 = (data["countriesAndTerritories"].unique())[:30]
+
+    for each in top30:
+        fig.add_trace(go.Scatter(
+            x = data.loc[data['countriesAndTerritories']==each]['dateRep'],
+            y = data.loc[data['countriesAndTerritories']==each]["cases"],
+            name = each,
+            mode = "lines"
+            )
+        )
+
+
+    data = data.sort_values(by='deaths',ascending=False)
+    top30 = (data["countriesAndTerritories"].unique())[:30]
+    for each in top30:
+        fig.add_trace(go.Scatter(
+            x = data.loc[data['countriesAndTerritories']==each]['dateRep'],
+            y = data.loc[data['countriesAndTerritories']==each]["deaths"],
+            name = each,
+            mode = "lines"
+            )
+        )
+
+    fig.update_layout(
+        xaxis=dict(
+            title = "Date",
+            titlefont_size=16,
+            tickfont_size=14,
+            showgrid = False
+        ),
+        yaxis = {
+            'showgrid': False,
+            'showline': True,
+        },
+        legend=dict(
+            x=0,
+            y=1.0,
+            bgcolor='rgba(255, 255, 255, 0)',
+        ),
+        plot_bgcolor=bgcolor,
+        updatemenus = [
+                dict(
+                    active = 0,
+                    buttons = list([
+                        dict(
+                            label = "Cases",
+                            method = "update",
+                            args=[{'visible':visible_list_cases, 'title' : 'New Cases'}]
+                        ),
+                        dict(
+                            label = "Deaths",
+                            method = "update",
+                            args=[{'visible':visible_list_deaths,'title' : 'New Deaths'}]
+                        )
+                    ]
+                ),
+            )]
+    )
+
+    return fig
 
 def show_numbers(id):
     """
@@ -130,7 +137,8 @@ def show_numbers(id):
         }
     }
 
-def global_map(df,kind):
+def global_map(kind):
+    df = df_total_new
     px.set_mapbox_access_token(covid_data.map_box_token)
     fig=px.scatter_mapbox(df, lat="Lat", lon="Long_",
                               hover_name="Combined_Key", hover_data=[kind], color = "Combined_Key",
@@ -152,56 +160,73 @@ def global_map(df,kind):
     fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     return fig
 
-# def cum_plot(data):
-#     cum = covid_data.cumulative(data)
-#     fig = go.Figure()
-#     fig.add_trace(go.Scatter(
-#         x = cum['Date'],
-#         y = cum['Deaths'],
-#         name = "Deaths",
-#         mode = "lines+markers"
-#         )
-#     )
-#     fig.add_trace(go.Scatter(
-#         x = cum['Date'],
-#         y = cum['Cases'],
-#         name = "Cases",
-#         mode = "lines+markers"
-#         )
-#     )
-#     fig.update_layout(
-#         title='Total Cases (Date-wise)',
-#         xaxis_tickfont_size=1,
-#         xaxis=dict(
-#             title = "Date",
-#             titlefont_size=16,
-#             tickfont_size=14,
-#         ),
-#         legend=dict(
-#             x=0,
-#             y=1.0,
-#             bgcolor='rgba(255, 255, 255, 0)',
-#         ),
-#         plot_bgcolor='lightgrey'
-#     )
-#     return fig
+def make_total_datewise_plots():
+    """
+    Total deaths and cases worldwide on each date since outbreak
+    """
+    df = covid_data.get_total_daily_data()
 
-# Areas = [
-#     {'label':i, 'value':i} for i in df['Area'].unique()
-# ]
-# Areas.append({'label':'All', 'value':'ALL'})
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Scatter(
+            x = df["Date"],
+            y = df["Total Cases"],
+            name = "Total Cases",
+            mode = "markers+lines",
+            marker = dict(
+                color = "red"
+            )
+        )
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x = df["Date"],
+            y = df["Total Deaths"],
+            name = "Total Deaths",
+            mode = "markers+lines",
+            marker = dict(
+                color = "black"
+            )
+        )
+    )
+
+    fig.update_layout(
+        title = "Total Cases and Deaths (Daily)",
+        xaxis=dict(
+            title = "Date",
+            titlefont_size=16,
+            tickfont_size=14,
+            showgrid = False
+        ),
+        yaxis = {
+            'showgrid': False,
+            'showline': True,
+        },
+        legend=dict(
+            x=0,
+            y=1.0,
+            bgcolor='rgba(255, 255, 255, 0)',
+        ),
+        plot_bgcolor=bgcolor,
+    )
+    return fig
 
 app.layout = html.Div(
         id = "root",
         children=[
-        html.Div([
-            html.H1(children=[
-                'COVID 19 Tracker',
-            ], style={'text-align': 'left'}),
-        ]),
+        html.Header(children=[
+            html.H1(
+                children=[
+                    'COVID-19 Tracker',
+                ]),
+            ],
+                className = "header"
+        ),
         html.Div(
             children=[
-                html.Div(children=[
+                html.Div(id = "total_confirmed",children=[
                         html.H4([
                             "Confirmed Cases",
                             # html.Img(
@@ -222,7 +247,7 @@ app.layout = html.Div(
                         ],
                     className='six columns pretty_container',
                     ),
-                html.Div(children=[
+                html.Div(id = "total_deaths",children=[
                         html.H4([
                             "Total Deaths",
                             # html.Img(
@@ -243,7 +268,7 @@ app.layout = html.Div(
                         ],
                     className='six columns pretty_container',
                     ),
-                html.Div(children=[
+                html.Div(id = "total_recovered",children=[
                         html.H4([
                             "Recovered",
                             # html.Img(
@@ -262,7 +287,7 @@ app.layout = html.Div(
                             className='svg-container',
                             style={'height': 150},),
                         ],
-                    className='six columns pretty_container', id="indicator-div"
+                    className='six columns pretty_container'
                     )
             ]
         ),
@@ -282,13 +307,13 @@ app.layout = html.Div(
             ),
             dcc.Graph(
                 id='GlobalMap',
-            )
-        ], className='twelve columns pretty_container',
-            style={
-                'width': '98%',
-                'margin-right': '0',
-            },
-            id="map-div"
+            )],
+              className='twelve columns pretty_container',
+                style={
+                    'width': '100%',
+                    'margin-right': '0',
+                },
+                id="map-div"
         ),
         # html.Div(
         #     dcc.Tabs(
@@ -374,7 +399,7 @@ app.layout = html.Div(
     [Input('ChooseMap','value')]
 )
 def make_map(value):
-    return global_map(df_total_new,value)
+    return global_map(value)
 
 
 # @app.callback(

@@ -9,19 +9,10 @@ map_box_token = "pk.eyJ1IjoiY2hpbm1heTQ0MDAiLCJhIjoiY2s4d2htZ3FlMGU2aTNzbXdwZGQw
 url_excel = "https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-{}.xlsx"
 url_csv = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{}.csv'
 
-daily_data = pd.DataFrame()
-df_total = pd.DataFrame()
-
-def get_data():
-    global daily_data
-    global df_total
-    # request = requests.get(url_excel.format(date))
-    # i=0
-    # while(request.status_code != 200):
-    #     i = i+1
-    #     request = requests.get(url_excel.format(date - datetime.timedelta(i)))
-    # daily_data = pd.read_excel(url_excel.format((date - datetime.timedelta(i))))
-    #
+def get_total_data():
+    """
+    Download the latest csv file available at Johns Hopkins' github repository
+    """
     # request = requests.get(url_csv.format(date.strftime("%m-%d-%Y")))
     # i=0
     # while(request.status_code != 200):
@@ -29,10 +20,29 @@ def get_data():
     #     request = requests.get(url_csv.format((date - datetime.timedelta(i)).strftime("%m-%d-%Y")))
     # df_total = pd.read_csv(url_csv.format((date - datetime.timedelta(i)).strftime("%m-%d-%Y")))
     df_total = pd.read_csv("04-13-2020.csv")
+    return df_total
+
+def get_daily_data():
+    """
+    Download the latest excel file made available by ECDC
+    """
+    # request = requests.get(url_excel.format(date))
+    # i=0
+    # while(request.status_code != 200):
+    #     i = i+1
+    #     request = requests.get(url_excel.format(date - datetime.timedelta(i)))
+    # daily_data = pd.read_excel(url_excel.format((date - datetime.timedelta(i))))
     daily_data = pd.read_excel("COVID-19-geographic-disbtribution-worldwide-2020-04-13.xlsx")
+    daily_data = daily_data.sort_values(by='dateRep')
+    return daily_data
 
+df_daily = get_daily_data() #New Deaths and Cases observed in each country since the outbreak
+df_total = get_total_data() #Total confirmed cases, recovered cases and deaths in each country and some regions
 
-def update_total():
+def df_total_country_wise():
+    """
+    Total Cases and Deaths for each country
+    """
     df_total_new = pd.DataFrame(columns=df_total.columns)
     countries = df_total["Country_Region"].unique()
     entry = dict()
@@ -49,51 +59,35 @@ def update_total():
         df_total_new = df_total_new.append(entry,ignore_index=True)
     return df_total_new
 
-def get_monthly_data(df):
-    temp = df.copy()
-    temp['month'] = temp['month'].apply(lambda x : str(x)) + "-" + temp['year'].apply(lambda x : str(x))
-    months = temp['month'].unique().tolist()
-    monthly = pd.DataFrame(columns=['Area','Month','Cases','Deaths','Id'])
-    Areas = df['Area'].unique()
-    for each in months:
-        for area in Areas:
-            row = {
-                'Area': area,
-                'Month': each,
-                'Cases': temp.loc[(temp['Area']==area) & (temp['month']==each)]['Cases'].sum(),
-                'Deaths':temp.loc[(temp['Area']==area) & (temp['month']==each)]['Deaths'].sum(),
-                'alpha3': temp.loc[temp['Area']==area]['alpha3'].unique().tolist()[0]
-            }
-            monthly = monthly.append(row,ignore_index=True)
-    return monthly
+def get_daily_countrywise_cumulative_data():
+    """
+    cumulative data for each country. Each entry shows total cases and deaths observed in 'countryAndTerritories' till 'dateRep'.
+    """
+    df_new = pd.DataFrame(columns=df_daily.columns)
+    countries = df_daily["countriesAndTerritories"].unique()
+    for each in countries:
+        df = df_daily.loc[df_daily["countriesAndTerritories"]==each]
+        df.deaths = df.deaths.cumsum(axis=0)
+        df.cases = df.cases.cumsum(axis=0)
+        df_new = df_new.append(df)
+    return df_new
 
-def get_total_data(df):
-    total = pd.DataFrame(columns = ['Area','Cases','Deaths','Id'])
-    Areas = df['Area'].unique()
-    for each in Areas:
-        row = {
-            'Area':each,
-            'Cases': df.loc[df['Area']==each]['Cases'].sum(),
-            'Deaths': df.loc[df['Area']==each]['Deaths'].sum(),
-            'alpha3':df.loc[df['Area']==each]['alpha3'].unique()[0]
-        }
-        total = total.append(row,ignore_index=True)
-    total = total.sort_values(by='Cases', ascending=False)
-    return total
-
-def cumulative(data):
-
-    dates = data['Date'].unique()
-    cumulative = pd.DataFrame(columns=['Date','Cases','Deaths'])
+def get_total_daily_data():
+    """
+    cumulative data for each date. Each entry shows total cases and deaths worldwide on that day.
+    """
+    data = df_daily
+    dates = data['dateRep'].unique()
+    cumulative = pd.DataFrame(columns=['Date','Total Cases','Total Deaths'])
     for each in dates:
         row = {
             'Date':each,
-            'Cases':data.loc[data['Date']==each]['Cases'].sum(),
-            'Deaths':data.loc[data['Date']==each]['Deaths'].sum(),
+            'Total Cases':data.loc[data['dateRep']==each]['cases'].sum(),
+            'Total Deaths':data.loc[data['dateRep']==each]['deaths'].sum(),
         }
         cumulative = cumulative.append(row,ignore_index=True)
     cumulative = cumulative.sort_values(by="Date")
-    cumulative['Deaths'] = cumulative['Deaths'].cumsum()
-    cumulative['Cases'] = cumulative['Cases'].cumsum()
+    cumulative['Total Deaths'] = cumulative['Total Deaths'].cumsum()
+    cumulative['Total Cases'] = cumulative['Total Cases'].cumsum()
 
     return cumulative
