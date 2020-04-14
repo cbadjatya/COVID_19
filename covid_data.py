@@ -1,31 +1,53 @@
-import datetime
 import pandas as pd
+import datetime
 import requests
-import pycountry as pc
+import numpy as np
+
+date = datetime.date.today()
+map_box_token = "pk.eyJ1IjoiY2hpbm1heTQ0MDAiLCJhIjoiY2s4d2htZ3FlMGU2aTNzbXdwZGQwZDZsayJ9.4Dm7PN7L6q5k4830GaiWUg"
+
+url_excel = "https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-{}.xlsx"
+url_csv = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{}.csv'
+
+daily_data = pd.DataFrame()
+df_total = pd.DataFrame()
 
 def get_data():
-    date = datetime.date.today()
+    global daily_data
+    global df_total
+    # request = requests.get(url_excel.format(date))
+    # i=0
+    # while(request.status_code != 200):
+    #     i = i+1
+    #     request = requests.get(url_excel.format(date - datetime.timedelta(i)))
+    # daily_data = pd.read_excel(url_excel.format((date - datetime.timedelta(i))))
+    #
+    # request = requests.get(url_csv.format(date.strftime("%m-%d-%Y")))
+    # i=0
+    # while(request.status_code != 200):
+    #     i = i+1
+    #     request = requests.get(url_csv.format((date - datetime.timedelta(i)).strftime("%m-%d-%Y")))
+    # df_total = pd.read_csv(url_csv.format((date - datetime.timedelta(i)).strftime("%m-%d-%Y")))
+    df_total = pd.read_csv("04-13-2020.csv")
+    daily_data = pd.read_excel("COVID-19-geographic-disbtribution-worldwide-2020-04-13.xlsx")
 
-    url = ("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-{}.xlsx").format(date)
-    request = requests.get(url)
-    if request.status_code == 200:
-        df = pd.read_excel(url)
-    else:
-        url = ("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-{}.xlsx").format(date - datetime.timedelta(1))
-        df = pd.read_excel(url)
 
-    date = df.iloc[0].dateRep.date()
-
-    df = df.rename(columns = {
-        'countriesAndTerritories':'Area',
-        'deaths' : "Deaths",
-        'cases' : 'Cases',
-        'dateRep' : 'Date',
-        'countryterritoryCode':'alpha3',
-        })
-
-    return df
-
+def update_total():
+    df_total_new = pd.DataFrame(columns=df_total.columns)
+    countries = df_total["Country_Region"].unique()
+    entry = dict()
+    for each in countries:
+        df = df_total.loc[df_total["Country_Region"]==each]
+        entry["Confirmed"] = df["Confirmed"].sum()
+        entry["Deaths"] = df["Deaths"].sum()
+        entry["Recovered"] = df["Recovered"].sum()
+        entry["Country_Region"] = each
+        entry["Last_Update"] = df["Last_Update"].unique()[0]
+        entry["Lat"] = df["Lat"].unique()[0]
+        entry["Long_"] = df["Long_"].unique()[0]
+        entry["Combined_Key"] = each
+        df_total_new = df_total_new.append(entry,ignore_index=True)
+    return df_total_new
 
 def get_monthly_data(df):
     temp = df.copy()
