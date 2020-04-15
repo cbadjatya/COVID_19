@@ -25,6 +25,7 @@
   color: black;
   font-size: 50px;
   font-family:  monospace;
+  width : 98%;
 }
 
 .container {
@@ -62,10 +63,10 @@
   .one.column,
   .one.columns                    { width: 4.66666666667%; }
   .two.columns                    { width: 13.3333333333%; }
-  .three.columns                  { width: 22%;            }
+  .three.columns                  { width: 23%;            }
   .four.columns                   { width: 30.6666666667%; }
   .five.columns                   { width: 39.3333333333%; }
-  .six.columns                    { width: 31.667%;            }
+  .six.columns                    { width: 48%;            }
   .seven.columns                  { width: 56.6666666667%; }
   .eight.columns                  { width: 65.3333333333%; }
   .nine.columns                   { width: 74.0%;          }

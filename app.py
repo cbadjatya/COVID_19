@@ -29,11 +29,12 @@ df_total_new = covid_data.df_total_country_wise()
 
 bgcolor = "#f3f3f1"
 
-marker_colors = {"Deaths":"black", "Confirmed":"red","Recovered":"green"}
+marker_colors = {"Deaths":"black", "Confirmed":"red","Recovered":"green", "Active":"blue"}
 map_colors = {
     "Deaths" : [marker_colors['Deaths']]*df_total_new['Deaths'].size,
     "Recovered" : [marker_colors['Recovered']]*df_total_new['Recovered'].size,
     "Confirmed" : [marker_colors["Confirmed"]]*df_total_new["Confirmed"].size,
+    "Active": [marker_colors["Active"]]*df_total_new["Active"].size,
 }
 
 template = {'layout': {'paper_bgcolor': bgcolor, 'plot_bgcolor': bgcolor}}
@@ -85,7 +86,7 @@ def daily_plot_country_wise():
         ),
         yaxis = {
             'showgrid': False,
-            'showline': True,
+            'showline': False,
         },
         legend=dict(
             x=0,
@@ -93,6 +94,7 @@ def daily_plot_country_wise():
             bgcolor='rgba(255, 255, 255, 0)',
         ),
         plot_bgcolor=bgcolor,
+        paper_bgcolor = bgcolor,
         updatemenus = [
                 dict(
                     active = 0,
@@ -109,8 +111,9 @@ def daily_plot_country_wise():
                         )
                     ]
                 ),
-            )]
+            )],
     )
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 
     return fig
 
@@ -140,10 +143,18 @@ def show_numbers(id):
 def global_map(kind):
     df = df_total_new
     px.set_mapbox_access_token(covid_data.map_box_token)
+
+    sizes = {
+        "Deaths" : np.tanh(abs(np.array(df["Deaths"].tolist())/4000))*8000,
+        "Confirmed" : np.tanh(abs(np.array(df["Confirmed"].tolist())/4000))*6000,
+        "Recovered" : np.tanh(abs(np.array(df["Recovered"].tolist())/4000))*7000,
+        "Active" : np.tanh(abs(np.array(df["Active"].tolist())/4000))*6000
+    }
+
     fig=px.scatter_mapbox(df, lat="Lat", lon="Long_",
-                              hover_name="Combined_Key", hover_data=[kind], color = "Combined_Key",
-                               size = np.tanh(abs(np.array(df[kind].tolist())/4000))*6000,
-                          color_discrete_sequence = map_colors[kind],
+                              hover_name="Country_Region", hover_data=[kind], color = "Country_Region",
+                               size = sizes[kind],
+                          color_discrete_sequence = map_colors[kind], opacity=0.5,
                              height=400)
     fig.update_layout(mapbox_style="light",
                       mapbox=dict(
@@ -202,7 +213,7 @@ def make_total_datewise_plots():
         ),
         yaxis = {
             'showgrid': False,
-            'showline': True,
+            'showline': False,
         },
         legend=dict(
             x=0,
@@ -210,7 +221,9 @@ def make_total_datewise_plots():
             bgcolor='rgba(255, 255, 255, 0)',
         ),
         plot_bgcolor=bgcolor,
+        paper_bgcolor = bgcolor,
     )
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     return fig
 
 app.layout = html.Div(
@@ -224,17 +237,11 @@ app.layout = html.Div(
             ],
                 className = "header"
         ),
-        html.Div(
-            children=[
-                html.Div(id = "total_confirmed",children=[
+            html.Div(
+                children=[
+                    html.Div(id = "total_confirmed",children=[
                         html.H4([
                             "Confirmed Cases",
-                            # html.Img(
-                            #     id='show-indicator-modal',
-                            #     src="assets/question-circle-solid.svg",
-                            #     n_clicks=0,
-                            #     className='info-icon',
-                            # ),
                         ], className="container_title"),
                         dcc.Loading(
                             dcc.Graph(
@@ -245,17 +252,11 @@ app.layout = html.Div(
                             className='svg-container',
                             style={'height': 150},),
                         ],
-                    className='six columns pretty_container',
+                    className='three columns pretty_container',
                     ),
                 html.Div(id = "total_deaths",children=[
                         html.H4([
                             "Total Deaths",
-                            # html.Img(
-                            #     id='show-indicator-modal',
-                            #     src="assets/question-circle-solid.svg",
-                            #     n_clicks=0,
-                            #     className='info-icon',
-                            # ),
                         ], className="container_title"),
                         dcc.Loading(
                             dcc.Graph(
@@ -266,17 +267,11 @@ app.layout = html.Div(
                             className='svg-container',
                             style={'height': 150},),
                         ],
-                    className='six columns pretty_container',
+                    className='three columns pretty_container',
                     ),
                 html.Div(id = "total_recovered",children=[
                         html.H4([
                             "Recovered",
-                            # html.Img(
-                            #     id='show-indicator-modal',
-                            #     src="assets/question-circle-solid.svg",
-                            #     n_clicks=0,
-                            #     className='info-icon',
-                            # ),
                         ], className="container_title"),
                         dcc.Loading(
                             dcc.Graph(
@@ -287,8 +282,23 @@ app.layout = html.Div(
                             className='svg-container',
                             style={'height': 150},),
                         ],
-                    className='six columns pretty_container'
-                    )
+                    className='three columns pretty_container'
+                    ),
+                    html.Div(id = "active",children=[
+                            html.H4([
+                                "Active",
+                            ], className="container_title"),
+                            dcc.Loading(
+                                dcc.Graph(
+                                    className='indicator-graph',
+                                    figure=show_numbers("Active"),
+                                    config={'displayModeBar': False},
+                                ),
+                                className='svg-container',
+                                style={'height': 150},),
+                            ],
+                        className='three columns pretty_container'
+                        )
             ]
         ),
 
@@ -301,7 +311,8 @@ app.layout = html.Div(
                 options = [
                     {'label':'Deaths','value':'Deaths'},
                     {'label':'Confirmed','value':'Confirmed'},
-                    {'label':'Recovered','value':'Recovered'}
+                    {'label':'Recovered','value':'Recovered'},
+                    {'label':'Active','value':'Active'}
                 ],
                 value='Confirmed',
             ),
@@ -310,87 +321,40 @@ app.layout = html.Div(
             )],
               className='twelve columns pretty_container',
                 style={
-                    'width': '100%',
+                    'width': '98%',
                     'margin-right': '0',
                 },
                 id="map-div"
         ),
-        # html.Div(
-        #     dcc.Tabs(
-        #         children=[
-        #             dcc.Tab(label = 'Global Map',children=[
-        #                 html.Div( id = 'makeMap',
-        #                     children=[
-        #                         html.Div(
-        #                             html.H3("Global Data as of {}".format(date))
-        #                         ),
-        #                         dcc.Dropdown(
-        #                             id = 'ChooseMap',
-        #                             options = [
-        #                                 {'label':'Deaths','value':'Deaths'},
-        #                                 {'label':'Cases','value':'Cases'}
-        #                             ],
-        #                             value='Cases',
-        #                         ),
-        #                         dcc.Graph(
-        #                             id='GlobalMap',
-        #                         )
-        #                     ]
-        #                 )
-        #             ]),
-        #             dcc.Tab(label = 'Charts',children=[
-        #                 html.Div(children=[
-        #                     dcc.Dropdown(id = 'Country',
-        #                         options = Areas,
-        #                         value = 'ALL',
-        #                     ),
-        #                     dcc.Graph(
-        #                         id = 'DateWise',
-        #                     ),
-        #                 ],
-        #                     style={'width': '49%', 'display': 'inline-block'}
-        #                 ),
-        #                 html.Div(
-        #                     children=[
-        #                         dcc.Graph(
-        #                             id = "cumulative",
-        #                             figure = cum_plot(df)
-        #                         ),
-        #                     ],
-        #                     style={'width': '49%', 'display': 'inline-block'}
-        #                 ),
-        #                 dcc.Graph(
-        #                     id = 'CountryWise',
-        #                     figure = countrywise_graph(totals)
-        #                 )
-        #             ]),
-        #             dcc.Tab(label='Table',children=[
-        #                 dash_table.DataTable(
-        #                     id = 'table',
-        #                     columns = [{'name':i, 'id':i} for i in totals.columns],
-        #                     data = totals.to_dict('records'),
-        #                     style_cell={'textAlign': 'left'},
-        #                     style_header={
-        #                         'backgroundColor': 'white',
-        #                         'fontWeight': 'bold'
-        #                     },
-        #                     style_cell_conditional=[
-        #                         {
-        #                             'if': {'column_id': 'Region'},
-        #                             'textAlign': 'left'
-        #                         },
-        #                     ],
-        #                     # style_as_list_view=True,
-        #                     style_table={
-        #                             'maxHeight': '900px',
-        #                             'overflowY': 'scroll'
-        #                         },
-        #                 )
-        #             ])
-        #         ],
-        #     ),
-        # ),
-],
+        html.Div(children=[
+            html.Div(
+                children=[
+                    html.H4([
+                        "Top 30 Regions",
+                    ], className="container_title"),
+                    dcc.Graph(
+                        id='top30',
+                        figure=daily_plot_country_wise(),
+                        config={'displayModeBar': False}
+                    ),
+                ],
+                className='six columns pretty_container'
+            ),
+            html.Div(
+                children=[
+                    html.H4([
+                        "Worldwide Plot",
+                    ], className="container_title"),
+                    dcc.Graph(
+                        id='global-datewise',
+                        config={'displayModeBar': False},
+                        figure=make_total_datewise_plots(),
+                    ),
+                ],
+                className='six columns pretty_container'
+            ),
+        ]),
+    ],
 )
 
 

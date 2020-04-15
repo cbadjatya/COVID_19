@@ -55,7 +55,7 @@ def df_total_country_wise():
         entry["Last_Update"] = df["Last_Update"].unique()[0]
         entry["Lat"] = df["Lat"].unique()[0]
         entry["Long_"] = df["Long_"].unique()[0]
-        entry["Combined_Key"] = each
+        entry["Active"] = df["Active"].sum()
         df_total_new = df_total_new.append(entry,ignore_index=True)
     return df_total_new
 
