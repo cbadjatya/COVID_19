@@ -13,26 +13,24 @@ def get_total_data():
     """
     Download the latest csv file available at Johns Hopkins' github repository
     """
-    # request = requests.get(url_csv.format(date.strftime("%m-%d-%Y")))
-    # i=0
-    # while(request.status_code != 200):
-    #     i = i+1
-    #     request = requests.get(url_csv.format((date - datetime.timedelta(i)).strftime("%m-%d-%Y")))
-    # df_total = pd.read_csv(url_csv.format((date - datetime.timedelta(i)).strftime("%m-%d-%Y")))
-    df_total = pd.read_csv("04-13-2020.csv")
+    request = requests.get(url_csv.format(date.strftime("%m-%d-%Y")))
+    i=0
+    while(request.status_code != 200):
+        i = i+1
+        request = requests.get(url_csv.format((date - datetime.timedelta(i)).strftime("%m-%d-%Y")))
+    df_total = pd.read_csv(url_csv.format((date - datetime.timedelta(i)).strftime("%m-%d-%Y")))
     return df_total
 
 def get_daily_data():
     """
     Download the latest excel file made available by ECDC
     """
-    # request = requests.get(url_excel.format(date))
-    # i=0
-    # while(request.status_code != 200):
-    #     i = i+1
-    #     request = requests.get(url_excel.format(date - datetime.timedelta(i)))
-    # daily_data = pd.read_excel(url_excel.format((date - datetime.timedelta(i))))
-    daily_data = pd.read_excel("COVID-19-geographic-disbtribution-worldwide-2020-04-13.xlsx")
+    request = requests.get(url_excel.format(date))
+    i=0
+    while(request.status_code != 200):
+        i = i+1
+        request = requests.get(url_excel.format(date - datetime.timedelta(i)))
+    daily_data = pd.read_excel(url_excel.format((date - datetime.timedelta(i))))
     daily_data = daily_data.sort_values(by='dateRep')
     return daily_data
 
