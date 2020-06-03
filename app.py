@@ -61,7 +61,7 @@ def daily_plot_country_wise():
             x = data.loc[data['countriesAndTerritories']==each]['dateRep'],
             y = data.loc[data['countriesAndTerritories']==each]["cases"],
             name = each,
-            mode = "lines"
+            mode = "lines",
             )
         )
 
@@ -170,11 +170,6 @@ def global_map(kind):
                      )
     fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     return fig
-
-global_map_deaths = global_map('Deaths')
-global_map_confirmed = global_map('Confirmed')
-global_map_recovered = global_map('Recovered')
-global_map_active = global_map('Active')
 
 def make_total_datewise_plots():
     """
@@ -368,13 +363,7 @@ app.layout = html.Div(
     [Input('ChooseMap','value')]
 )
 def make_map(value):
-    if value == 'Confirmed':
-        return global_map_confirmed
-    if value == 'Deaths':
-        return global_map_deaths
-    if value == 'Recovered':
-        return global_map_recovered
-    return global_map_active
+    return global_map(value)
 
 
 # @app.callback(
