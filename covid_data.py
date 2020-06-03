@@ -9,28 +9,32 @@ map_box_token = "pk.eyJ1IjoiY2hpbm1heTQ0MDAiLCJhIjoiY2s4d2htZ3FlMGU2aTNzbXdwZGQw
 url_excel = "https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-{}.xlsx"
 url_csv = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{}.csv'
 
+
+
 def get_total_data():
     """
     Download the latest csv file available at Johns Hopkins' github repository
     """
-    request = requests.get(url_csv.format(date.strftime("%m-%d-%Y")))
-    i=0
-    while(request.status_code != 200):
-        i = i+1
-        request = requests.get(url_csv.format((date - datetime.timedelta(i)).strftime("%m-%d-%Y")))
-    df_total = pd.read_csv(url_csv.format((date - datetime.timedelta(i)).strftime("%m-%d-%Y")))
+    # request = requests.get(url_csv.format(date.strftime("%m-%d-%Y")))
+    # i=0
+    # while(request.status_code != 200):
+    #     i = i+1
+    #     request = requests.get(url_csv.format((date - datetime.timedelta(i)).strftime("%m-%d-%Y")))
+    # df_total = pd.read_csv(url_csv.format((date - datetime.timedelta(i)).strftime("%m-%d-%Y")))
+    df_total = pd.read_csv('JHopkins.csv')
     return df_total
 
 def get_daily_data():
     """
     Download the latest excel file made available by ECDC
     """
-    request = requests.get(url_excel.format(date))
-    i=0
-    while(request.status_code != 200):
-        i = i+1
-        request = requests.get(url_excel.format(date - datetime.timedelta(i)))
-    daily_data = pd.read_excel(url_excel.format((date - datetime.timedelta(i))))
+    # request = requests.get(url_excel.format(date))
+    # i=0
+    # while(request.status_code != 200):
+    #     i = i+1
+    #     request = requests.get(url_excel.format(date - datetime.timedelta(i)))
+    # daily_data = pd.read_excel(url_excel.format((date - datetime.timedelta(i))))
+    daily_data = pd.read_excel('COVID-19-geographic-disbtribution-worldwide.xlsx')
     daily_data = daily_data.sort_values(by='dateRep')
     return daily_data
 
